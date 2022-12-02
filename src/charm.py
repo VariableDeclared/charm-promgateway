@@ -13,11 +13,7 @@ develop a new k8s charm using the Operator Framework:
 """
 
 import logging
-from nturl2path import pathname2url
 import subprocess
-import os
-import pathlib
-import yaml
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
@@ -34,9 +30,9 @@ class UFWRule(object):
         self._to_cidr = "any" if to_cidr == "" else to_cidr
         self._from_cidr = "any" if from_cidr == "" else from_cidr
 
-
     def __str__(self) -> str:
-        return f"allow from {self._from_cidr} to {self._to_cidr} proto {self._proto} port {self._port}"
+        return f"allow from {self._from_cidr} to \
+            {self._to_cidr} proto {self._proto} port {self._port}"
 
 
 class PushgatewayCharm(CharmBase):
@@ -54,6 +50,7 @@ class PushgatewayCharm(CharmBase):
         UFWRule("tcp", "22", "any", "any"),
         UFWRule("tcp", "9091", "any", "any")
     ]
+
     def __init__(self, *args):
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -75,27 +72,26 @@ class PushgatewayCharm(CharmBase):
             logger.error(e)
             return
         except NameError as e:
-            self.unit.status = BlockedStatus(f"Resource {resource.get('resource-name')} not found.")
+            self.unit.status = BlockedStatus(
+                f"Resource {resource.get('resource-name')} not found."
+            )
             logger.error(e)
             return
         self.snap_install(pushgateway_snap)
         self.model.unit.status = ActiveStatus()
 
-
     def _on_install(self, event):
         # Handle resources
         self.handle_resources(self.resources.get("pushgateway"))
-    
+
     def write_config(self):
         self.handle_resources(self.resources.get("pushgateway"))
-
 
     def snap_install(self, snap_location):
         logger.debug(f"Installing snap using devmode. Snap {snap_location}")
         output = self.cli(f"snap install --devmode {snap_location}")
 
         logger.debug(f"Ran snap install. result: {output}")
-
 
     def handle_firewall(self):
         for rule in self.firewall_rules:
