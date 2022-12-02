@@ -1,0 +1,26 @@
+architecture: x86_64
+config:
+  image.architecture: amd64
+  image.description: ubuntu 20.04 LTS amd64 (release) (20220615)
+  image.label: release
+  image.os: ubuntu
+  image.release: focal
+  image.serial: "20220615"
+  image.type: disk-kvm.img
+  image.version: "20.04"
+  volatile.base_image: 5824e0245ebb9f134cf87ce85f53f9304c180845e869d577547b9a4b7ef1369a
+  volatile.cloud-init.instance-id: d53ee775-cdcf-4dc8-a151-3738048beb80
+  volatile.eth0.hwaddr: 00:16:3e:e4:87:88
+  volatile.last_state.power: STOPPED
+  volatile.uuid: 75b8b933-5ea4-4204-802a-dd3ea94c3a67
+  volatile.vsock_id: "276"
+devices:
+  eth0:
+    name: eth0
+    network: airgapped
+    type: nic
+ephemeral: false
+profiles:
+- default
+stateful: false
+description: ""

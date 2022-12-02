@@ -1,0 +1,22 @@
+# Copyright 2022 pjds
+# See LICENSE file for licensing details.
+
+# For a complete list of supported options, see:
+# https://juju.is/docs/sdk/metadata-reference
+series:
+ - focal
+name: prom-pushgateway
+display-name: |
+  prom-pushgateway
+description: |
+  prom-pushgateway
+summary: |
+  prom-pushgateway
+
+
+# TEMPLATE-TODO: each container defined above must specify an oci-image resource
+resources:
+  pushgateway-snap:
+    type: file
+    filename: pushgateway.snap
+    description: Prometheus Pushgateway built snap.
