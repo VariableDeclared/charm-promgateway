@@ -31,8 +31,8 @@ class UFWRule(object):
         super().__init__()
         self._proto = proto
         self._port = port
-        self._to_cidr = to_cidr
-        self._from_cidr = from_cidr
+        self._to_cidr = "any" if to_cidr == "" else to_cidr
+        self._from_cidr = "any" if from_cidr == "" else from_cidr
 
 
     def __str__(self) -> str:
@@ -51,12 +51,12 @@ class PushgatewayCharm(CharmBase):
     }
 
     firewall_rules = [
-        UFWRule("tcp", "9091", "", "0.0.0.0/0")
+        UFWRule("tcp", "22", "any", "any"),
+        UFWRule("tcp", "9091", "any", "any")
     ]
     def __init__(self, *args):
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.fortune_action, self._on_fortune_action)
         self.framework.observe(self.on.install, self._on_install)
 
     def cli(self, command):
@@ -78,8 +78,8 @@ class PushgatewayCharm(CharmBase):
             self.unit.status = BlockedStatus(f"Resource {resource.get('resource-name')} not found.")
             logger.error(e)
             return
-
         self.snap_install(pushgateway_snap)
+        self.model.unit.status = ActiveStatus()
 
 
     def _on_install(self, event):
@@ -88,53 +88,6 @@ class PushgatewayCharm(CharmBase):
     
     def write_config(self):
         self.handle_resources(self.resources.get("pushgateway"))
-
-#         etc_config_path = pathlib.Path("/etc/headscale/config.yaml")
-
-#         if not etc_config_path.exists():
-#             self.cli("touch /etc/headscale/config.yaml")
-#         # TODO: Config
-#         pushgateway_config = {  }
-
-#         systemd_config_location = "/etc/systemd/system/headscale.service"
-
-#         systemd_config = """
-# [Unit]
-# Description=pushgateway
-# After=syslog.target
-# After=network.target
-
-# [Service]
-# Type=simple
-# User=pushgateway
-# Group=pushgateway
-# ExecStart=/usr/local/bin/pushgateway
-# Restart=always
-# RestartSec=5
-
-# [Install]
-# WantedBy=multi-user.target
-# """
-#         configs = {
-#             etc_config_path: pushgateway_config, 
-#             systemd_config_location: systemd_config
-#         }
-
-#         for config, contents in configs.items():
-#             with open(config, 'w') as fh:
-#                 fh.write(yaml.dump(contents))
-#         systemd_commands = [
-#                 "usermod -a -G headscale current_user",
-#                 "systemctl daemon-reload",
-#                 "systemctl enable --now headscale",
-#                 "systemctl restart headscale"
-#             ]10.66.240.223
-
-#         for command in systemd_commands:
-#             self.cli(command)
-
-
-        
 
 
     def snap_install(self, snap_location):
@@ -147,6 +100,7 @@ class PushgatewayCharm(CharmBase):
     def handle_firewall(self):
         for rule in self.firewall_rules:
             self.cli(f"ufw {rule}")
+        self.cli("ufw enable")
 
     def _on_config_changed(self, _):
         """Config changed"""
