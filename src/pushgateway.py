@@ -32,7 +32,7 @@ class UFWRule(object):
 
     def __str__(self) -> str:
         return f"allow from {self._from_cidr} to \
-            {self._to_cidr} proto {self._proto} port {self._port}"
+{self._to_cidr} proto {self._proto} port {self._port}"
 
 
 class PushgatewayCharm(CharmBase):
@@ -103,22 +103,6 @@ class PushgatewayCharm(CharmBase):
 
         self.write_config()
         self.handle_firewall()
-
-    def _on_fortune_action(self, event):
-        """Just an example to show how to receive actions.
-
-        TEMPLATE-TODO: change this example to suit your needs.
-        If you don't need to handle actions, you can remove this method,
-        the hook created in __init__.py for it, the corresponding test,
-        and the actions.py file.
-
-        Learn more about actions at https://juju.is/docs/sdk/actions
-        """
-        fail = event.params["fail"]
-        if fail:
-            event.fail(fail)
-        else:
-            event.set_results({"fortune": "A bug in the code is worth two in the documentation."})
 
 
 if __name__ == "__main__":

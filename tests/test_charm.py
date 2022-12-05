@@ -6,63 +6,59 @@
 import unittest
 from unittest.mock import Mock
 
-from charm import CharmCharm
-from ops.model import ActiveStatus
+from pushgateway import PushgatewayCharm, UFWRule
 from ops.testing import Harness
 
 
-class TestCharm(unittest.TestCase):
+class TestUFWRule(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    def test___str__(self):
+        rule = UFWRule("tcp", "22", "any", "any")
+        self.assertEqual(str(rule), "allow from any to any proto tcp port 22")
+
+
+class TestPushgateway(unittest.TestCase):
     def setUp(self):
-        self.harness = Harness(CharmCharm)
+        self.harness = Harness(PushgatewayCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
 
-    def test_config_changed(self):
-        self.assertEqual(list(self.harness.charm._stored.things), [])
-        self.harness.update_config({"thing": "foo"})
-        self.assertEqual(list(self.harness.charm._stored.things), ["foo"])
+    # def test_config_changed(self):
+    #     self.assertEqual(list(self.harness.charm._stored.things), [])
+    #     self.harness.update_config({"thing": "foo"})
+    #     self.assertEqual(list(self.harness.charm._stored.things), ["foo"])
 
-    def test_action(self):
-        # the harness doesn't (yet!) help much with actions themselves
-        action_event = Mock(params={"fail": ""})
-        self.harness.charm._on_fortune_action(action_event)
+    def test_handle_resources(self):
+        self.harness.charm.snap_install = Mock()
+        self.harness.model.resources.fetch = Mock()
+        self.harness.charm.handle_resources({
+            "pushgateway": {
+                "filename": "pushgateway.snap",
+                "resource-name": "pushgateway-snap"
+            }
+        })
 
-        self.assertTrue(action_event.set_results.called)
+        self.harness.charm.snap_install.assert_called_once()
 
-    def test_action_fail(self):
-        action_event = Mock(params={"fail": "fail this"})
-        self.harness.charm._on_fortune_action(action_event)
+    def test__on_install(self):
+        self.harness.charm.handle_resources = Mock()
 
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
+        self.harness.charm._on_install("")
 
-    def test_httpbin_pebble_ready(self):
-        # Simulate making the Pebble socket available
-        self.harness.set_can_connect("httpbin", True)
-        # Check the initial Pebble plan is empty
-        initial_plan = self.harness.get_container_pebble_plan("httpbin")
-        self.assertEqual(initial_plan.to_yaml(), "{}\n")
-        # Expected plan after Pebble ready with default config
-        expected_plan = {
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {"thing": "🎁"},
-                }
-            },
-        }
-        # Get the httpbin container from the model
-        container = self.harness.model.unit.get_container("httpbin")
-        # Emit the PebbleReadyEvent carrying the httpbin container
-        self.harness.charm.on.httpbin_pebble_ready.emit(container)
-        # Get the plan now we've run PebbleReady
-        updated_plan = self.harness.get_container_pebble_plan("httpbin").to_dict()
-        # Check we've got the plan we expected
-        self.assertEqual(expected_plan, updated_plan)
-        # Check the service was started
-        service = self.harness.model.unit.get_container("httpbin").get_service("httpbin")
-        self.assertTrue(service.is_running())
-        # Ensure we set an ActiveStatus with no message
-        self.assertEqual(self.harness.model.unit.status, ActiveStatus())
+        self.harness.charm.handle_resources.assert_called_once()
+
+    def test_write_config(self):
+        self.harness.charm.handle_resources = Mock()
+
+        self.harness.charm.write_config()
+
+        self.harness.charm.handle_resources.assert_called_once()
+
+    def test_snap_install(self):
+        self.harness.charm.cli = Mock()
+
+        self.harness.charm.snap_install("test.file")
+
+        self.harness.charm.cli.assert_called_once_with("snap install --devmode test.file")
